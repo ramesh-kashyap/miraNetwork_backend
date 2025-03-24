@@ -7,12 +7,8 @@ const TelegramUser = sequelize.define("TelegramUser", {
     tname: { type: DataTypes.STRING, allowNull: true }, // Stores last trade timestamp
     tlastname: { type: DataTypes.STRING, allowNull: true }, // Stores last trade timestamp
     balance: { type: DataTypes.FLOAT, allowNull: true }, // Stores last trade timestamp
-    // todayroi: { type: DataTypes.FLOAT, allowNull: true }, // Stores last trade timestamp
-    // total_reward: { type: DataTypes.FLOAT, allowNull: true }, // Stores last trade timestamp
-    // lastTrade: { type: DataTypes.DATE, allowNull: true }, // Stores last trade timestamp
-    connected_time: { type: DataTypes.DATE, allowNull: true }, // Stores last trade timestam
-    // lastUpdated: { type: DataTypes.DATE, allowNull: true }, // Stores last trade timestam
-    is_connected: { type: DataTypes.INET, allowNull: true }, // Stores last trade timestam
+    tabbalance: { type: DataTypes.INTEGER, allowNull: true }, // Stores last trade timestamp
+    invite_bonus: {type: DataTypes.FLOAT, allowNull: false,},// Stores last trade timestam
     
     
 }, {

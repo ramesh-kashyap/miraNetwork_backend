@@ -562,8 +562,102 @@ const getTotalBalance = async (req, res) => {
     }
 };
 
+const updateBalance = async (req, res) => {
+    console.log(req.body);
+    try {
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
 
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        await TelegramUser.increment({ balance: 1, tabbalance: 1 }, { where: { id: userId } });
 
+        const updatedUser = await TelegramUser.findOne({ where: { id: userId } });
 
+        return res.status(200).json({
+            message: "Balance updated successfully",
+            balance: updatedUser.balance,
+            tabbalance: updatedUser.tabbalance,
+        });
 
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata,getTotalBalance };
+    } catch (error) {
+        console.error("❌ Error updating balance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+const fatchBalance = async (req, res) =>{
+    // console.log(req.body);
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        // console.log(user);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE telegram_id = :telegramId`;
+        const result = await sequelize.query(query, {
+            type: QueryTypes.SELECT,
+            replacements: { telegramId: user.telegram_id }, // Safe query binding
+         });
+         return res.status(200).json({
+            message: "Balance Fatch successfully",
+            balance: user.tabbalance,
+        });
+    }
+    catch (error) {
+        console.error("❌ Error updating balance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+const fatchpoint = async (req, res) =>{
+    // console.log("Api fatching",req.body);
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        if(!user){
+            return res.status(404).json({ message: "User not found" });
+        }
+        const userCount = await TelegramUser.count();
+
+        const total = user.tabbalance;
+        const inviteBonus = user.invite_bonus;
+        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE telegram_id = :telegramId`;
+        const result = await sequelize.query(query, {
+            type: QueryTypes.SELECT,
+            replacements: { telegramId: user.telegram_id }, // Safe query binding
+         });
+         const query1 = `SELECT COALESCE(SUM(balance), 0) AS totalCoin FROM telegram_users`;
+         const result1 = await sequelize.query(query1, { type: QueryTypes.SELECT });    
+         
+         const tid =user.telegram_id;
+            // console.log(Euser);
+         const totalCoin = parseInt(result[0]?.totalCoin, 10) || 0; // Ensure totalCoin is an integer
+         const totalallCoin = parseInt(result1[0]?.totalCoin, 10) || 0; // Ensure newBalance is a float
+        //  const totalBalance = parseFloat(totalCoin) + newBalance;
+         return res.json({
+            telegram_id :tid,
+            coin: totalCoin,
+            userCount: userCount,
+            balance:total,
+            totalallCoin:totalallCoin,
+            inBonus:inviteBonus,
+         });     
+    }
+    catch(error){
+          return console.error("Somthing wrong in backend");
+    }
+  }
+
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata,getTotalBalance, updateBalance, fatchBalance, fatchpoint};
