@@ -32,7 +32,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 // Security Middleware
 app.use(helmet());
-const allowedOrigins = ["http://localhost:3000", "https://73ff-2405-201-5802-909b-a8e7-ec77-fd22-7047.ngrok-free.app"]; // Add multiple origins
+const allowedOrigins = ["http://localhost:3000","https://170f-2405-201-5802-909b-a8e7-ec77-fd22-7047.ngrok-free.app"]; // Add multiple origins
 app.use(
    cors({
       origin: function (origin, callback) {

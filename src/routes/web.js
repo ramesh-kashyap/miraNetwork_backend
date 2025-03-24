@@ -68,7 +68,9 @@ router.post('/start-trade', telegramAuthMiddleware,TelegramController.startTrade
 router.post('/get-last-trade',telegramAuthMiddleware, TelegramController.getLastTrade);
 
 router.get('/all-data',telegramAuthMiddleware, TelegramController.getAlldata);
-
+router.post('/updateBalance', telegramAuthMiddleware,TelegramController.updateBalance);
+router.post('/fatchBalance', telegramAuthMiddleware,TelegramController.fatchBalance);
+router.post('/fatchPoint', telegramAuthMiddleware,TelegramController.fatchpoint);
 
 router.post('/claim-reward',telegramAuthMiddleware, TelegramController.claimReward);
 router.get('/fetch-points',telegramAuthMiddleware, TelegramController.fetchPoints);

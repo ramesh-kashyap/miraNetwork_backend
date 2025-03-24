@@ -258,6 +258,7 @@ const logout = async (req, res) => {
 
 
 const loginWithTelegram = async (req, res) => {
+    console.log(req.body);
     try {
         const { telegram_id, tusername, tname, tlastname } = req.body;
 
