@@ -260,6 +260,7 @@ const fetchPoints = async (req, res) => {
 
 // API to get lastTrade time for a user
 const claimReward = async (req, res) => {
+    console.log("Claim api hit");
     const { telegram_id } = req.body;
 
   try {
@@ -529,7 +530,236 @@ const getTasks = async (req, res) => {
     }
 };
 
-const getTotalBalance = async (req, res) => {
+
+const updateBalance = async (req, res) => {
+    // console.log(req.body);
+    try {
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        await TelegramUser.increment({ balance: 1, tabbalance: 1 }, { where: { id: userId } });
+
+        const updatedUser = await TelegramUser.findOne({ where: { id: userId } });
+
+        return res.status(200).json({
+            message: "Balance updated successfully",
+            balance: updatedUser.balance,
+            tabbalance: updatedUser.tabbalance,
+        });
+
+    } catch (error) {
+        console.error("❌ Error updating balance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+const fatchBalance = async (req, res) =>{
+    // console.log(req.body);
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        // console.log(user);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE telegram_id = :telegramId`;
+        const result = await sequelize.query(query, {
+            type: QueryTypes.SELECT,
+            replacements: { telegramId: user.telegram_id }, // Safe query binding
+         });
+         return res.status(200).json({
+            message: "Balance Fatch successfully",
+            tabbalance: user.tabbalance,
+        });
+    }
+    catch (error) {
+        console.error("❌ Error updating balance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+const fatchpoint = async (req, res) =>{
+    // console.log("Api fatching",req.body);
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        if(!user){
+            return res.status(404).json({ message: "User not found" });
+        }
+        const userCount = await TelegramUser.count();
+
+        const total = user.tabbalance;
+        const inviteBonus = user.invite_bonus;
+        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE telegram_id = :telegramId`;
+        const result = await sequelize.query(query, {
+            type: QueryTypes.SELECT,
+            replacements: { telegramId: user.telegram_id }, // Safe query binding
+         });
+         const query1 = `SELECT COALESCE(SUM(balance), 0) AS totalCoin FROM telegram_users`;
+         const result1 = await sequelize.query(query1, { type: QueryTypes.SELECT });    
+         
+         const tid =user.telegram_id;
+            // console.log(Euser);
+         const totalCoin = parseInt(result[0]?.totalCoin, 10) || 0; // Ensure totalCoin is an integer
+         const totalallCoin = parseInt(result1[0]?.totalCoin, 10) || 0; // Ensure newBalance is a float
+        //  const totalBalance = parseFloat(totalCoin) + newBalance;
+         return res.json({
+            telegram_id :tid,
+            coin: totalCoin,
+            userCount: userCount,
+            balance:total,
+            totalallCoin:totalallCoin,
+            inBonus:inviteBonus,
+         });     
+    }
+    catch(error){
+          return console.error("Somthing wrong in backend");
+    }
+  }
+
+
+  const daycoin = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            // console.log("❌ Unauthorized: User ID missing");
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await TelegramUser.findOne({ where: { id: userId } });
+        if (!user) {
+            // console.log("❌ User not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+        // const Euser = await User.findOne({ where: { telegram_id: user.telegram_id } });
+        // let tid = null;
+
+        // if (Euser) {
+        //     tid = Euser.telegram_id; 
+        // }        
+        // Fetch day_coin data
+        const query = "SELECT * FROM day_coin";
+        const results = await sequelize.query(query, { type: QueryTypes.SELECT });
+         
+        // console.log("✅ Day Coin Data Fetched:", results);
+        return res.json({
+            message: "Today Task Coin",
+            data: results, // Send fetched data
+            // telegram_id :tid,
+        });
+
+    } catch (error) {
+        console.error("❌ Error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+const claimday = async (req,res) =>{
+    console.log("day Claimed Api");
+    try{
+       const userId = req.user?.id;
+       if(!userId){
+        return res.json(401,'Unauthorised user');
+       }        
+       const user = await TelegramUser.findOne({where:{id: userId}});
+       if(!user){
+        return res.json(401,'user not found');
+       }
+    //    const Euser = await User.findOne({ where: { telegram_id: user.telegram_id } });      
+
+    //     if (!Euser) {
+    //         return res.json("Account Not Connected")
+    //     } 
+    //    const query = "SELECT * FROM coin_bundle WHERE telegram_id = :telegramId";
+    //    console.log(query);
+    const query = `SELECT * FROM coin_bundle WHERE telegram_id = :telegramId ORDER BY created_at DESC LIMIT 1`;
+       const result = await sequelize.query(query, {
+        type: QueryTypes.SELECT,
+        replacements: { telegramId: user.telegram_id } // Safe query binding
+    });
+    const lastClaimed = result.length > 0 ? result[0].created_at : null; // Extract last claimed date
+        const userClaimsCount = result.length;
+     return res.json({ message: "Day task Coin", data: result, userClaimsCount,lastClaimed  });
+    }
+    catch(error){
+       return console.error(error, "Day claim failed");
+    }
+  }
+
+  const claimtoday = async (req, res) => {
+    console.log("request send", req.body);
+    const userId = req.user?.id;
+    const { rewardId } = req.body; // Get reward ID from request
+    if (!userId) {
+        return res.status(401).json({ message: "Unauthorized user" });
+    }
+    try {
+        // Fetch reward details from `day_coin`
+        const coines = await sequelize.query(
+            "SELECT * FROM day_coin WHERE id = ?",
+            { replacements: [rewardId], type: sequelize.QueryTypes.SELECT }
+        );
+        //   console.log(coines);
+        if (!coines.length) {
+            return res.status(404).json({ message: "Reward not found" });
+        }
+        const { coins, id } = coines[0]; // Extract coin and bundle_id
+        // console.log(bundle_id);
+        // Fetch user details
+        const user = await sequelize.query(
+            "SELECT * FROM telegram_users WHERE id = ?",
+            { replacements: [userId], type: sequelize.QueryTypes.SELECT }
+        );
+        if (!user.length) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const telegramId = user[0].telegram_id;
+        // Check last claim time
+        const lastClaim = await sequelize.query(
+            "SELECT * FROM coin_bundle WHERE telegram_id = ? ORDER BY created_at DESC LIMIT 1",
+            { replacements: [telegramId], type: sequelize.QueryTypes.SELECT }
+        );
+        // const Euser = await User.findOne({ where: { telegram_id: telegramId } });
+        //  if(!Euser){
+        //     return res.json("User Not connected");
+        //  }
+        // if (lastClaim.length) {
+        //     const lastClaimedAt = new Date(lastClaim[0].created_at);
+        //     const now = new Date();
+        //     const timeDiff = (now - lastClaimedAt) / (1000 * 60 * 60); // Convert ms to hours
+
+        //     if (timeDiff < 24) {
+        //         return res.status(400).json({
+        //             message: "Sorry, you can't claim before 24 hours have passed since your previous claim.",
+        //         });
+        //     }
+        // }
+        // Insert new claim entry with coin & bundle_id
+        await sequelize.query(
+            "INSERT INTO coin_bundle (telegram_id, coin, bundle_id) VALUES (?, ?, ?)",
+            { replacements: [telegramId, coins, id] }
+        );  
+        await TelegramUser.increment({balance: coins }, { where: { telegram_id: telegramId } });
+        return res.json({ success: true, message: "🎉 Reward claimed successfully!" });
+
+    } catch (error) {
+        console.error("Error in claiming reward:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+   const getTotalBalance = async (req, res) => {
     try {
 
         const user = req.user;
@@ -553,8 +783,6 @@ const getTotalBalance = async (req, res) => {
           });
         //   const bonus = await UserTask.sum('bonus');
 
-
-
         return res.json({ success: true, totalBalance,allBalance: allBalance ,tabBalance:tabBalance,bonus:bonus});
     } catch (error) {
         console.error("Error calculating total balance:", error);
@@ -564,6 +792,91 @@ const getTotalBalance = async (req, res) => {
 
 
 
+const getTotalTeam = async (req, res) => {
+    try {
+      const user = req.user;
+  
+      if (!user || !user.id) {
+        return res.status(400).json({ success: false, message: "User not found in request" });
+      }
+  
+      // 🔍 Login user verify using ID
+      const loginUser = await TelegramUser.findOne({
+        where: { id: user.id }
+      });
+  
+      if (!loginUser) {
+        return res.status(404).json({ success: false, message: "User not found in database" });
+      }
+  
+      // 👥 Fetch referrals (team) where sponser = login user's telegram_id
+      const referrals = await TelegramUser.findAll({
+        where: { sponsor: loginUser.telegram_id }
+      });
+  
+      return res.status(200).json({
+        success: true,
+        totalTeamCount: referrals.length,
+        teamMembers: referrals
+      });
+  
+    } catch (error) {
+      console.error("Error fetching referral team:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+
+  const getTotalMember = async (req, res) => {
+    try {
+      const user = req.user;
+  
+      if (!user || !user.id) {
+        return res.status(400).json({ success: false, message: "User not found in request" });
+      }
+  
+      // Find login user from DB
+      const loginUser = await TelegramUser.findOne({
+        where: { id: user.id }
+      });
+  
+      if (!loginUser) {
+        return res.status(404).json({ success: false, message: "User not found in database" });
+      }
+  
+      // Count how many users have loginUser.telegram_id as their sponsor
+      const totalMember = await TelegramUser.count({
+        where: {   sponsor: loginUser.telegram_id }
+      });
+  
+
+      const getInviteBonus = await TelegramUser.findOne({
+        where: { id: user.id },
+        attributes: ['telegram_id', 'invite_bonus'] 
+      });
 
 
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata,getTotalBalance };
+      return res.json({ totalMember: totalMember,getInviteBonus:getInviteBonus});
+    } catch (error) {
+      console.error("Error calculating total members:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+  
+  const getTopUser = async (req, res) => {
+    try {
+      const topUsers = await TelegramUser.findAll({
+        attributes: ['id', 'telegram_id', 'tusername', 'tname', 'balance'], 
+        order: [['balance', 'DESC']], 
+        limit: 10 
+      });
+  
+      return res.json({
+        success: true,
+        topUsers
+      });
+    } catch (error) {
+      console.error("Error fetching top users:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser };
