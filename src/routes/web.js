@@ -79,7 +79,12 @@ router.post('/claimTask',telegramAuthMiddleware, TelegramController.claimTask);
 router.get('/getReferral',telegramAuthMiddleware, TelegramController.getReferral);
 
 router.get('/total-balance', telegramAuthMiddleware,TelegramController.getTotalBalance);
+router.get('/all-data',telegramAuthMiddleware, TelegramController.getAlldata);
+router.get('/TotalMember',telegramAuthMiddleware, TelegramController.getTotalMember);
+router.get('/topuser',telegramAuthMiddleware, TelegramController.getTopUser);
 
+
+router.get('/TotalTeam',telegramAuthMiddleware, TelegramController.getTotalTeam);
 // app.get('/api/auth.daycoin', (req, res) => {
 //   res.json({ message: 'Baycoin route working!' });
 // });

@@ -530,41 +530,9 @@ const getTasks = async (req, res) => {
     }
 };
 
-const getTotalBalance = async (req, res) => {
-    try {
-
-        const user = req.user;
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Telegram ID is required" });
-        }
-
-        const totalBalance = await TelegramUser.sum('balance', {
-            where: { id:user.id }
-          });
-
-          const allBalance = await TelegramUser.sum('balance');
-
-          const tabBalance = await TelegramUser.sum('tabbalance', {
-            where: { id:user.id }
-          });
-        
-  
-          const bonus = await UserTask.sum('bonus', {
-            where: { id:user.id }
-          });
-        //   const bonus = await UserTask.sum('bonus');
-
-
-
-        return res.json({ success: true, totalBalance,allBalance: allBalance ,tabBalance:tabBalance,bonus:bonus});
-    } catch (error) {
-        console.error("Error calculating total balance:", error);
-        return res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-};
 
 const updateBalance = async (req, res) => {
-    console.log(req.body);
+    // console.log(req.body);
     try {
         const userId = req.user?.id; // Ensure req.user is not undefined
         if (!userId) {
@@ -790,4 +758,125 @@ const claimday = async (req,res) =>{
         return res.status(500).json({ message: "Internal server error" });
     }
 };
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata,getTotalBalance, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday};
+
+   const getTotalBalance = async (req, res) => {
+    try {
+
+        const user = req.user;
+        if (!user) {
+            return res.status(400).json({ success: false, message: "Telegram ID is required" });
+        }
+
+        const totalBalance = await TelegramUser.sum('balance', {
+            where: { id:user.id }
+          });
+
+          const allBalance = await TelegramUser.sum('balance');
+
+          const tabBalance = await TelegramUser.sum('tabbalance', {
+            where: { id:user.id }
+          });
+        
+  
+          const bonus = await UserTask.sum('bonus', {
+            where: { id:user.id }
+          });
+        //   const bonus = await UserTask.sum('bonus');
+
+        return res.json({ success: true, totalBalance,allBalance: allBalance ,tabBalance:tabBalance,bonus:bonus});
+    } catch (error) {
+        console.error("Error calculating total balance:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
+
+
+
+const getTotalTeam = async (req, res) => {
+    try {
+      const user = req.user;
+  
+      if (!user || !user.id) {
+        return res.status(400).json({ success: false, message: "User not found in request" });
+      }
+  
+      // 🔍 Login user verify using ID
+      const loginUser = await TelegramUser.findOne({
+        where: { id: user.id }
+      });
+  
+      if (!loginUser) {
+        return res.status(404).json({ success: false, message: "User not found in database" });
+      }
+  
+      // 👥 Fetch referrals (team) where sponser = login user's telegram_id
+      const referrals = await TelegramUser.findAll({
+        where: { sponsor: loginUser.telegram_id }
+      });
+  
+      return res.status(200).json({
+        success: true,
+        totalTeamCount: referrals.length,
+        teamMembers: referrals
+      });
+  
+    } catch (error) {
+      console.error("Error fetching referral team:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+
+  const getTotalMember = async (req, res) => {
+    try {
+      const user = req.user;
+  
+      if (!user || !user.id) {
+        return res.status(400).json({ success: false, message: "User not found in request" });
+      }
+  
+      // Find login user from DB
+      const loginUser = await TelegramUser.findOne({
+        where: { id: user.id }
+      });
+  
+      if (!loginUser) {
+        return res.status(404).json({ success: false, message: "User not found in database" });
+      }
+  
+      // Count how many users have loginUser.telegram_id as their sponsor
+      const totalMember = await TelegramUser.count({
+        where: {   sponsor: loginUser.telegram_id }
+      });
+  
+
+      const getInviteBonus = await TelegramUser.findOne({
+        where: { id: user.id },
+        attributes: ['telegram_id', 'invite_bonus'] 
+      });
+
+
+      return res.json({ totalMember: totalMember,getInviteBonus:getInviteBonus});
+    } catch (error) {
+      console.error("Error calculating total members:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+  
+  const getTopUser = async (req, res) => {
+    try {
+      const topUsers = await TelegramUser.findAll({
+        attributes: ['id', 'telegram_id', 'tusername', 'tname', 'balance'], 
+        order: [['balance', 'DESC']], 
+        limit: 10 
+      });
+  
+      return res.json({
+        success: true,
+        topUsers
+      });
+    } catch (error) {
+      console.error("Error fetching top users:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser };
