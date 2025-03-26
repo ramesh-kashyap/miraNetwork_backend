@@ -9,8 +9,7 @@ const TelegramUser = sequelize.define("TelegramUser", {
     balance: { type: DataTypes.FLOAT, allowNull: true }, // Stores last trade timestamp
     tabbalance: { type: DataTypes.INTEGER, allowNull: true }, // Stores last trade timestamp
     invite_bonus: {type: DataTypes.FLOAT, allowNull: false,},// Stores last trade timestam
-    
-    
+    sponsor: {type: DataTypes.STRING, allowNull: true,},    
 }, {
     tableName: "telegram_users",
     timestamps: false,
