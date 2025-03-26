@@ -55,12 +55,6 @@ router.get("/withdraws",authMiddleware,withdrawController.getUserWithdraws)
 router.get("/getWithdrawInfo",authMiddleware,withdrawController.getWithdrawInfo)
 
 
-
-
-
-
-
-
 // telegram api 
 router.post('/telegram-login', AuthController.loginWithTelegram);
 router.post('/telegram-user-detail', TelegramController.getUserByTelegramId);
@@ -72,7 +66,9 @@ router.post('/updateBalance', telegramAuthMiddleware,TelegramController.updateBa
 router.post('/fatchBalance', telegramAuthMiddleware,TelegramController.fatchBalance);
 router.post('/fatchPoint', telegramAuthMiddleware,TelegramController.fatchpoint);
 
-router.post('/claim-reward',telegramAuthMiddleware, TelegramController.claimReward);
+router.get('/daycoin', telegramAuthMiddleware,TelegramController.daycoin);
+router.post('/claim-day', telegramAuthMiddleware,TelegramController.claimday);
+router.post('/claim-reward',telegramAuthMiddleware,TelegramController.claimtoday);
 router.get('/fetch-points',telegramAuthMiddleware, TelegramController.fetchPoints);
 router.post('/update-today-roi',telegramAuthMiddleware, TelegramController.updateTodayRoi);
 router.get('/get-mining-bonus',telegramAuthMiddleware, TelegramController.getMiningBonus);
@@ -84,6 +80,9 @@ router.get('/getReferral',telegramAuthMiddleware, TelegramController.getReferral
 
 router.get('/total-balance', telegramAuthMiddleware,TelegramController.getTotalBalance);
 
+// app.get('/api/auth.daycoin', (req, res) => {
+//   res.json({ message: 'Baycoin route working!' });
+// });
 
 
 router.get("/vip/:userId", async (req, res) => {
