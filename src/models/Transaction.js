@@ -7,6 +7,8 @@ const Transaction = sequelize.define(
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     user_id: { type: DataTypes.INTEGER, allowNull: false },
     user_id_fk: { type: DataTypes.INTEGER, allowNull: false },
+    coin: { type: DataTypes.INTEGER, allowNull: false },
+
     amount: { type: DataTypes.FLOAT, allowNull: false },
     remarks: { type: DataTypes.STRING, allowNull: true },
     ttime: { type: DataTypes.DATE, allowNull: false },

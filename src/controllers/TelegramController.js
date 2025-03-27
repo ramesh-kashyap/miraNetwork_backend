@@ -10,6 +10,7 @@ const moment = require("moment-timezone");
 const { getVip,getBalance,getPercentage } = require("../services/userService");
 const { log } = require('winston');
 
+
 let timeNow = Date.now();
 
 const getUserByTelegramId = async (req, res) => {
@@ -879,4 +880,33 @@ const getTotalTeam = async (req, res) => {
       return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
   };
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser };
+
+
+  const getAllIncome = async (req, res) => {
+    try {
+        const user = req.user;
+  
+        if (!user || !user.id) {
+          return res.status(400).json({ success: false, message: "User not found in request" });
+        }
+  
+      const income = await Transaction.findAll({
+        where: { id: user.id }
+    });
+  
+      console.log("Logged-in User's Income Data:", income);
+  
+      return res.status(200).json({ success: true, data: income });
+    } catch (error) {
+      console.error("Error fetching income:", error.message);
+      return res.status(500).json({ error: "Server error", details: error.message });
+    }
+  };
+
+
+
+
+
+
+
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser,getAllIncome  };
