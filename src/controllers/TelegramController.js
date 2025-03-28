@@ -866,14 +866,18 @@ const getTotalTeam = async (req, res) => {
   const getTopUser = async (req, res) => {
     try {
       const topUsers = await TelegramUser.findAll({
-        attributes: ['id', 'telegram_id', 'tusername', 'tname', 'balance'], 
-        order: [['balance', 'DESC']], 
-        limit: 10 
+        attributes: ['id', 'telegram_id', 'tusername', 'tname', 'balance'],
+        order: [['balance', 'DESC']],
+        limit: 10
       });
+  
+      const top3 = topUsers.slice(0, 3);
+      const rest7 = topUsers.slice(3);
   
       return res.json({
         success: true,
-        topUsers
+        top3,
+        rest7
       });
     } catch (error) {
       console.error("Error fetching top users:", error);
