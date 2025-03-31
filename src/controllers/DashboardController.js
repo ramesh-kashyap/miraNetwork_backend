@@ -4,6 +4,8 @@ const nodemailer = require("nodemailer");
 const {  Op, fn, col } = require('sequelize'); // ✅ Import Sequelize Operators
 const axios = require("axios");
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
+
 
 
 
@@ -154,6 +156,11 @@ const resetPassword = async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
+
+
+
 
 
 
@@ -484,4 +491,4 @@ const getTelegramId = async (req, res) => {
 
 
 
-module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance,connectTelegram,getLast15DaysIncome,getTransactions,liveRates,getTelegramId,getUsdtAddress,verifyAccount };
+module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance,connectTelegram,getLast15DaysIncome,getTransactions,liveRates,getTelegramId,getUsdtAddress,verifyAccount};

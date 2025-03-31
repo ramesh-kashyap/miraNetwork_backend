@@ -22,6 +22,7 @@ const  withdrawController  = require('../controllers/withdrawController');
 router.post('/google', googleController.verifyGoogleToken);
 router.post('/register', AuthController.register);
 router.post('/login', AuthController.login);
+router.post('/change-password', authMiddleware,AuthController.GetchangePassword); // ✅ No DashboardController here
 
 
 router.get("/direct-income", authMiddleware, IncomeController.getDirectIncome);
@@ -42,6 +43,7 @@ router.post('/reset-password',  DashboardController.resetPassword);
 router.get("/available-balance", authMiddleware, DashboardController.getAvailableBalance);
 router.post("/connect-telegram", authMiddleware, DashboardController.connectTelegram);
 router.post("/verify-account", authMiddleware, DashboardController.verifyAccount);
+
 
 router.get("/deposit-History", authMiddleware, InvestController.getHistory);
 router.post("/recharge", authMiddleware, InvestController.confirmDeposit);

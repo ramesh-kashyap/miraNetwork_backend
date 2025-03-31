@@ -48,6 +48,8 @@ const User = sequelize.define('User', {
         type: DataTypes.FLOAT,
         allowNull: true,
     },
+
+    
     password: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -78,6 +80,16 @@ const User = sequelize.define('User', {
         type: DataTypes.INTEGER,
         allowNull: true
     },
+
+    phone: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+
+    country: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
     TPSR: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -111,6 +123,8 @@ const User = sequelize.define('User', {
         allowNull: true,
         unique: true, // Ensuring telegram_id is unique
     },
+    phone: DataTypes.STRING,
+
     
   
 }, {
