@@ -10,6 +10,7 @@ const moment = require("moment-timezone");
 const { getVip,getBalance,getPercentage } = require("../services/userService");
 const { log } = require('winston');
 
+
 let timeNow = Date.now();
 
 const getUserByTelegramId = async (req, res) => {
@@ -852,9 +853,13 @@ const getTotalTeam = async (req, res) => {
         limit: 10 
       });
   
+      const top3 = topUsers.slice(0, 3);
+      const rest7 = topUsers.slice(3);
+  
       return res.json({
         success: true,
-        topUsers
+        top3,
+        rest7
       });
     } catch (error) {
       console.error("Error fetching top users:", error);

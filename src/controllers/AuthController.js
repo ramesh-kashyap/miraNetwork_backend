@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const express = require('express');
+const { log } = require('winston');
 // const bodyParser = require('body-parser')
 
 
@@ -15,10 +16,10 @@ const register = async (req, res) => {
     const t = await sequelize.transaction(); // Start a transaction
 
     try {
-        const { fullName, email, password, repeatPassword, referralCode } = req.body;
+        const { fullName, email, phone,password, repeatPassword, referralCode , country} = req.body;
 
         // Validate required fields
-        if (!fullName || !email || !password || !repeatPassword) {
+        if (!fullName || !email || !password || !phone || !repeatPassword) {
             return res.status(200).json({
                 message: "All2 fields are required!",
                 status: false
@@ -32,6 +33,16 @@ const register = async (req, res) => {
                 status: false
             });
         }
+
+
+        const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+
+if (!strongPassword.test(password)) {
+  return res.status(200).json({
+    message: "Password must be at least 6 characters long and include at least 1 uppercase letter, 1 lowercase letter, and 1 number.",
+    status: false
+  });
+}
 
         // Check if user already exists
         const existingUser = await User.findOne({ where: { email }, transaction: t });
@@ -79,7 +90,9 @@ const register = async (req, res) => {
         const newUser = await User.create({
             name: fullName,
             email: email,
+            country: country,
             username,
+            phone:phone,
             password: hashedPassword,
             tpassword: hashedTPassword,
             PSR: password,
@@ -89,7 +102,10 @@ const register = async (req, res) => {
             ParentId: parentId
         }, { transaction: t });
 
-        // Commit transaction
+
+// console.log( newUser);
+
+        
         await t.commit();
 
         // Generate JWT token
@@ -111,6 +127,63 @@ const register = async (req, res) => {
         });
     }
 };
+
+
+
+const GetchangePassword = async (req, res) => {
+    try {
+      const { old_password, password, password_confirmation } = req.body;
+
+      // 1. Validate fields
+      if (!old_password || !password || !password_confirmation) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      if (password !== password_confirmation) {
+        return res.status(400).json({ error: "Passwords must match" });
+      }
+
+      // 2. Get logged-in user from token
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findByPk(decoded.id);
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // 3. Check if user has a password
+      if (!user.password) {
+        return res.status(400).json({ error: "User password not found" });
+      }
+
+      // 4. Check current password
+      const isMatch = await bcrypt.compare(old_password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+
+      // 5. Hash and update new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await user.update({
+        password: hashedPassword,
+        updatedAt: new Date()
+      });
+
+      return res.json({ message: "Password updated successfully" });
+
+    } catch (err) {
+      console.error("Change password error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
 const register2 = async (req, res) => {
     try {
         const { name, phone, email, password, sponsor } = req.body;
@@ -191,60 +264,57 @@ const register2 = async (req, res) => {
 // Login User Function
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(200).json({
-                message: 'Email and Password are required!',
-                status: false,
-            });
-        }
-
-        // Check if user exists in the database
-        const user = await User.findOne({ where: { email } });
-
-        if (!user) {
-            return res.status(200).json({
-                message: 'User not found!',
-                status: false,
-            });
-        }
-
-       if (user.google_id)
-        {
-            return res.status(200).json({
-                message: 'Sign In with Google!',
-                status: false,
-            });
-        }
-
-        // Compare password
-        const isMatch = await bcrypt.compare(password, user.password);        
-        if (!isMatch) {
-            return res.status(200).json({
-                message: 'Invalid credentials!',
-                status: false,
-            });
-        }
-
-        // Generate JWT token
-        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+      const { email, password } = req.body;
+  
+      // Validate inputs
+      if (!email || !password) {
         return res.status(200).json({
-            message: 'Login successful!',
-            status: true,
-            username: user.username,
-            token
+          message: 'Email and Password are required!',
+          status: false,
         });
-
+      }
+  
+      // Find user by email
+      const user = await User.findOne({ where: { email } });
+  
+      if (!user) {
+        return res.status(200).json({
+          message: 'User not found!',
+          status: false,
+        });
+      }
+  
+      // Compare password
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(200).json({
+          message: 'Invalid credentials!',
+          status: false,
+        });
+      }
+  
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+  
+      return res.status(200).json({
+        message: 'Login successful!',
+        status: true,
+        username: user.username,
+        token,
+      });
     } catch (error) {
-        console.error("Error:", error.message);
-        return res.status(200).json({
-            message: error.message,
-            status: false,
-        });
+      console.error("Error:", error.message);
+      return res.status(500).json({
+        message: "Server error",
+        status: false,
+      });
     }
-};
-
+  };
+  
 
 
 const logout = async (req, res) => {
@@ -378,5 +448,5 @@ const updateUserProfile = async (req, res) => {
 
 
 
-module.exports = { login, register, logout,loginWithTelegram,getUserProfile,updateUserProfile};
+module.exports = { login, register, logout,loginWithTelegram,getUserProfile,updateUserProfile,GetchangePassword};
 
