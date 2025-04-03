@@ -260,7 +260,7 @@ const fetchPoints = async (req, res) => {
 
 // API to get lastTrade time for a user
 const claimReward = async (req, res) => {
-    console.log("Claim api hit");
+    // console.log("Claim api hit");
     const { telegram_id } = req.body;
 
   try {
@@ -298,7 +298,7 @@ const claimReward = async (req, res) => {
 
     res.json({ success: true, message: "Reward claimed!" });
   } catch (error) {
-    console.error("Error claiming reward:", error);
+    // console.error("Error claiming reward:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }   
 };
@@ -331,7 +331,7 @@ const getMiningBonus = async (req, res) => {
   try {
     let user = req.user;
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
-    let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+    let userDetail = await User.findOne({ where: { userId:user.id } });
     if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
     
     const today = new Date();
@@ -365,7 +365,7 @@ const getUserBalance = async (req, res) => {
     try {
       let user = req.user;
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
-      let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+      let userDetail = await User.findOne({ where: { userId:user.id } });
       if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
         const userbalance = userDetail ? userDetail.userbalance : 0;
         const miningBonus = await Income.sum("comm", {
@@ -384,7 +384,7 @@ const getUserBalance = async (req, res) => {
         });
 
             const task_bonus = await UserTask.sum("bonus", {
-                where: { telegram_id: user.telegram_id },
+                where: { userId: user.id},
             });
 
             const taskBonus =  task_bonus || 0;
@@ -401,7 +401,7 @@ const getUserBalance = async (req, res) => {
     try {
       let user = req.user;
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
-      let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+      let userDetail = await User.findOne({ where: { userId:user.id } });
       if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
         const sponsor = await User.count("id", {
             where: {
@@ -427,16 +427,17 @@ const getUserBalance = async (req, res) => {
 
 
 const startTask = async (req, res) => {
+    const userId = req.user?.id;
     try {
-        const { telegram_id, task_id } = req.body;
-        let telegramDetail = await TelegramUser.findOne({ where: { telegram_id:telegram_id } });
+        const {task_id } = req.body;
+        let telegramDetail = await User.findOne({ where: { id:userId } });
         if (!telegramDetail) return res.status(200).json({ success: false, message: "Telegram not found" });
-        if (telegramDetail.is_connected==0) return res.status(200).json({ success: false, message: "Connect Account with WebPage" });
-        let userDetail = await User.findOne({ where: { telegram_id:telegramDetail.id } });
-        if (!userDetail) return res.status(200).json({ success: false, message: "User not found" });
-        if (task_id==1 && userDetail.is_verify==0) return res.status(200).json({ success: false, message: "Verify Your Email Id!" });
+        // if (telegramDetail.is_connected==0) return res.status(200).json({ success: false, message: "Connect Account with WebPage" });
+        // let userDetail = await User.findOne({ where: { telegram_id:telegramDetail.id } });
+        // if (!userDetail) return res.status(200).json({ success: false, message: "User not found" });
+        // if (task_id==1 && telegramDetail.is_verify==0) return res.status(200).json({ success: false, message: "Verify Your Email Id!" });
          const [userTask, created] = await UserTask.findOrCreate({
-            where: { telegram_id, task_id },
+            where: { userId, task_id },
             defaults: { status: "pending" },
           });
           res.json({ success:true, message: created ? "Task started" : "Task already in progress" });
@@ -448,40 +449,54 @@ const startTask = async (req, res) => {
 
 
   const claimTask = async (req, res) => {
+    const userId = req.user?.id;
     try {
-        const { telegram_id, task_id } = req.body;
+        const {task_id } = req.body;
         let taskDetail = await Task.findOne({ where: { id:task_id } });
-        if (!taskDetail) return res.status(404).json({ success: false, message: "Task not found" });
-        let telegramDetail = await TelegramUser.findOne({ where: { telegram_id:telegram_id } });
-        if (!telegramDetail) return res.status(404).json({ success: false, message: "Telegram not found" });
-        // let userDetail = await User.findOne({ where: { telegram_id:telegramDetail.id } });
-        if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
-
+        if (!taskDetail) return res.json({ success: false, message: "Task not found" });
+        let telegramDetail = await User.findOne({ where: { id:userId} });
+        if (!telegramDetail) return res.json({ success: false, message: "Telegram not found" });
+        // let userDetail = await User.findOne({ where: { userId:telegramDetail.id } });
+        // if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
+        
         await UserTask.update(
             { status: "completed", bonus: taskDetail.reward }, 
-            { where: { telegram_id, task_id } }
-        );    
-        
-        await TelegramUser.update(
-            { balance: telegramDetail.balance + taskDetail.reward }, // Updating balance in TelegramUser
-            { where: { telegram_id: telegram_id } }
-        );
+            { where: { userId, task_id } }
+        ); 
+        const checkin = await Income.create({
+            user_id: telegramDetail.id,
+            user_id_fk: telegramDetail.username,
+            amt: taskDetail.reward,
+            // comm: commission,
+            remarks: "Task Reward",
+            ttime: new Date(),
+        });
+
+        await Transaction.create({
+            user_id: telegramDetail.id,
+            user_id_fk: telegramDetail.username,
+            amount: taskDetail.reward,
+            // credit_type: 1,
+            remarks: "Task Reward",
+            ttime: new Date(),
+        });
         res.json({ message: "Task claimed successfully" });
 
     } catch (error) {
-        res.status(500).json({ error: "Error starting task" });
+        res.json({ error: "Error starting task" });
+        console.log(error);
     }
   };
 
 const getTasks = async (req, res) => {
     try {
-        const { telegram_id } = req.body;        
+        const userId = req.user?.id;        
         const tasks = await Task.findAll({
             include: [
               {
                 model: UserTask,
                 as: "userTasks",
-                where: { telegram_id },
+                where: { userId },
                 required: false,
               },
             ],
@@ -510,13 +525,13 @@ const getTasks = async (req, res) => {
 
   const getAlldata = async (req, res) => {
     try {
-        const { telegram_id } = req.query;  // ✅ Use `req.query` instead of `req.body`
+        const userId = req.user?.id;  // ✅ Use `req.query` instead of `req.body`
         
-        if (!telegram_id) {
+        if (!userId) {
             return res.status(400).json({ success: false, message: "Telegram ID is required" });
         }
 
-        const user = await TelegramUser.findOne({ where: { telegram_id }, raw: true });
+        const user = await TelegramUser.findOne({ where: {userId}, raw: true });
 
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
@@ -532,20 +547,21 @@ const getTasks = async (req, res) => {
 
 
 const updateBalance = async (req, res) => {
-    // console.log(req.body);
     try {
         const userId = req.user?.id; // Ensure req.user is not undefined
         if (!userId) {
             return res.status(401).json({ message: "Unauthorized: User ID missing" });
         }
 
-        const user = await TelegramUser.findOne({ where: { id: userId } });
+        const user = await User.findOne({ where: { id: userId } });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        await TelegramUser.increment({ balance: 1, tabbalance: 1 }, { where: { id: userId } });
 
-        const updatedUser = await TelegramUser.findOne({ where: { id: userId } });
+           await User.increment({ balance: 1, tabbalance: 1 }, { where: { id: userId } });
+        
+
+        const updatedUser = await User.findOne({ where: { id: userId } });
 
         return res.status(200).json({
             message: "Balance updated successfully",
@@ -566,15 +582,15 @@ const fatchBalance = async (req, res) =>{
         if (!userId) {
             return res.status(401).json({ message: "Unauthorized: User ID missing" });
         }
-        const user = await TelegramUser.findOne({ where: { id: userId } });
+        const user = await User.findOne({ where: { id: userId } });
         // console.log(user);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE telegram_id = :telegramId`;
+        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE userId = :userId`;
         const result = await sequelize.query(query, {
             type: QueryTypes.SELECT,
-            replacements: { telegramId: user.telegram_id }, // Safe query binding
+            replacements: { telegramId: user.id }, // Safe query binding
          });
          return res.status(200).json({
             message: "Balance Fatch successfully",
@@ -594,29 +610,29 @@ const fatchpoint = async (req, res) =>{
         if (!userId) {
             return res.status(401).json({ message: "Unauthorized: User ID missing" });
         }
-        const user = await TelegramUser.findOne({ where: { id: userId } });
+        const user = await User.findOne({ where: { id: userId } });
         if(!user){
             return res.status(404).json({ message: "User not found" });
         }
-        const userCount = await TelegramUser.count();
+        const userCount = await User.count();
 
         const total = user.tabbalance;
         const inviteBonus = user.invite_bonus;
-        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE telegram_id = :telegramId`;
+        const query = `SELECT SUM(coin) AS totalCoin FROM coin_bundle WHERE userId = :userId`;
         const result = await sequelize.query(query, {
             type: QueryTypes.SELECT,
-            replacements: { telegramId: user.telegram_id }, // Safe query binding
+            replacements: { telegramId: user.id}, // Safe query binding
          });
          const query1 = `SELECT COALESCE(SUM(balance), 0) AS totalCoin FROM telegram_users`;
          const result1 = await sequelize.query(query1, { type: QueryTypes.SELECT });    
          
-         const tid =user.telegram_id;
+         const tid =user.id;
             // console.log(Euser);
          const totalCoin = parseInt(result[0]?.totalCoin, 10) || 0; // Ensure totalCoin is an integer
          const totalallCoin = parseInt(result1[0]?.totalCoin, 10) || 0; // Ensure newBalance is a float
         //  const totalBalance = parseFloat(totalCoin) + newBalance;
          return res.json({
-            telegram_id :tid,
+            userId :tid,
             coin: totalCoin,
             userCount: userCount,
             balance:total,
@@ -631,13 +647,14 @@ const fatchpoint = async (req, res) =>{
 
 
   const daycoin = async (req, res) => {
+    console.log(req.body)
     try {
         const userId = req.user?.id;
         if (!userId) {
             // console.log("❌ Unauthorized: User ID missing");
             return res.status(401).json({ message: "Unauthorized: User ID missing" });
         }
-        const user = await TelegramUser.findOne({ where: { id: userId } });
+        const user = await User.findOne({ where: { id: userId } });
         if (!user) {
             // console.log("❌ User not found");
             return res.status(404).json({ message: "User not found" });
@@ -649,10 +666,10 @@ const fatchpoint = async (req, res) =>{
         //     tid = Euser.telegram_id; 
         // }        
         // Fetch day_coin data
-        const query = "SELECT * FROM day_coin";
-        const results = await sequelize.query(query, { type: QueryTypes.SELECT });
+        const results = await User.findOne({ where: { id: userId } });
+        // const results = await sequelize.query(query, { type: QueryTypes.SELECT });
          
-        // console.log("✅ Day Coin Data Fetched:", results);
+        console.log("✅ Day Coin Data Fetched:", results);
         return res.json({
             message: "Today Task Coin",
             data: results, // Send fetched data
@@ -672,25 +689,15 @@ const claimday = async (req,res) =>{
        if(!userId){
         return res.json(401,'Unauthorised user');
        }        
-       const user = await TelegramUser.findOne({where:{id: userId}});
+       const user = await User.findOne({where:{id: userId}});
        if(!user){
         return res.json(401,'user not found');
-       }
-    //    const Euser = await User.findOne({ where: { telegram_id: user.telegram_id } });      
-
-    //     if (!Euser) {
-    //         return res.json("Account Not Connected")
-    //     } 
-    //    const query = "SELECT * FROM coin_bundle WHERE telegram_id = :telegramId";
-    //    console.log(query);
-    const query = `SELECT * FROM coin_bundle WHERE telegram_id = :telegramId ORDER BY created_at DESC LIMIT 1`;
-       const result = await sequelize.query(query, {
-        type: QueryTypes.SELECT,
-        replacements: { telegramId: user.telegram_id } // Safe query binding
-    });
-    const lastClaimed = result.length > 0 ? result[0].created_at : null; // Extract last claimed date
-        const userClaimsCount = result.length;
-     return res.json({ message: "Day task Coin", data: result, userClaimsCount,lastClaimed  });
+       } 
+       const lastClaimed = user.meme_date; 
+       const userClaimsCount = await User.count({ where: { id: userId } });   
+       //    const lastClaimed = user.length > 0 ? user[0].created_at : null; // Extract last claimed date
+      
+     return res.json({ message: "Day task Coin", meme_coin: user.meme_coin, lastClaimed, userClaimsCount,});
     }
     catch(error){
        return console.error(error, "Day claim failed");
@@ -698,59 +705,31 @@ const claimday = async (req,res) =>{
   }
 
   const claimtoday = async (req, res) => {
-    console.log("request send", req.body);
+    console.log("Request received:", req.body);
     const userId = req.user?.id;
-    const { rewardId } = req.body; // Get reward ID from request
+    const { mcoin } = req.body;
     if (!userId) {
         return res.status(401).json({ message: "Unauthorized user" });
     }
+    if (!mcoin) {
+        return res.status(400).json({ message: "Reward amount is required" });
+    }
     try {
-        // Fetch reward details from `day_coin`
-        const coines = await sequelize.query(
-            "SELECT * FROM day_coin WHERE id = ?",
-            { replacements: [rewardId], type: sequelize.QueryTypes.SELECT }
-        );
-        //   console.log(coines);
-        if (!coines.length) {
-            return res.status(404).json({ message: "Reward not found" });
-        }
-        const { coins, id } = coines[0]; // Extract coin and bundle_id
-        // console.log(bundle_id);
-        // Fetch user details
-        const user = await sequelize.query(
-            "SELECT * FROM telegram_users WHERE id = ?",
-            { replacements: [userId], type: sequelize.QueryTypes.SELECT }
-        );
-        if (!user.length) {
+        // Find the user
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {  // Fix: user is an object, not an array
             return res.status(404).json({ message: "User not found" });
         }
-        const telegramId = user[0].telegram_id;
-        // Check last claim time
-        const lastClaim = await sequelize.query(
-            "SELECT * FROM coin_bundle WHERE telegram_id = ? ORDER BY created_at DESC LIMIT 1",
-            { replacements: [telegramId], type: sequelize.QueryTypes.SELECT }
+        // const telegramId = user.telegram_id;
+        // Increment meme_coin and update meme_date
+        await User.update(
+            {
+                meme_coin: user.meme_coin + mcoin, // Add to existing amount
+                meme_date: new Date(), // Update date
+            },
+            { where: { userId: userId } }
         );
-        // const Euser = await User.findOne({ where: { telegram_id: telegramId } });
-        //  if(!Euser){
-        //     return res.json("User Not connected");
-        //  }
-        // if (lastClaim.length) {
-        //     const lastClaimedAt = new Date(lastClaim[0].created_at);
-        //     const now = new Date();
-        //     const timeDiff = (now - lastClaimedAt) / (1000 * 60 * 60); // Convert ms to hours
 
-        //     if (timeDiff < 24) {
-        //         return res.status(400).json({
-        //             message: "Sorry, you can't claim before 24 hours have passed since your previous claim.",
-        //         });
-        //     }
-        // }
-        // Insert new claim entry with coin & bundle_id
-        await sequelize.query(
-            "INSERT INTO coin_bundle (telegram_id, coin, bundle_id) VALUES (?, ?, ?)",
-            { replacements: [telegramId, coins, id] }
-        );  
-        await TelegramUser.increment({balance: coins }, { where: { telegram_id: telegramId } });
         return res.json({ success: true, message: "🎉 Reward claimed successfully!" });
 
     } catch (error) {
@@ -758,6 +737,7 @@ const claimday = async (req,res) =>{
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
    const getTotalBalance = async (req, res) => {
     try {
@@ -794,6 +774,7 @@ const claimday = async (req,res) =>{
 
 const getTotalTeam = async (req, res) => {
     try {
+        const userId = req.user?.id;
       const user = req.user;
   
       if (!user || !user.id) {
@@ -801,7 +782,7 @@ const getTotalTeam = async (req, res) => {
       }
   
       // 🔍 Login user verify using ID
-      const loginUser = await TelegramUser.findOne({
+      const loginUser = await User.findOne({
         where: { id: user.id }
       });
   
@@ -810,8 +791,8 @@ const getTotalTeam = async (req, res) => {
       }
   
       // 👥 Fetch referrals (team) where sponser = login user's telegram_id
-      const referrals = await TelegramUser.findAll({
-        where: { sponsor: loginUser.telegram_id }
+      const referrals = await User.findAll({
+        where: { sponsor: loginUser.id }
       });
   
       return res.status(200).json({
@@ -828,6 +809,7 @@ const getTotalTeam = async (req, res) => {
 
   const getTotalMember = async (req, res) => {
     try {
+        const userId = req.user?.id;
       const user = req.user;
   
       if (!user || !user.id) {
@@ -835,7 +817,7 @@ const getTotalTeam = async (req, res) => {
       }
   
       // Find login user from DB
-      const loginUser = await TelegramUser.findOne({
+      const loginUser = await User.findOne({
         where: { id: user.id }
       });
   
@@ -844,14 +826,14 @@ const getTotalTeam = async (req, res) => {
       }
   
       // Count how many users have loginUser.telegram_id as their sponsor
-      const totalMember = await TelegramUser.count({
-        where: {   sponsor: loginUser.telegram_id }
+      const totalMember = await User.count({
+        where: {   sponsor: loginUser.id }
       });
   
 
       const getInviteBonus = await TelegramUser.findOne({
         where: { id: user.id },
-        attributes: ['telegram_id', 'invite_bonus'] 
+        attributes: ['userId', 'invite_bonus'] 
       });
 
 
@@ -864,8 +846,8 @@ const getTotalTeam = async (req, res) => {
   
   const getTopUser = async (req, res) => {
     try {
-      const topUsers = await TelegramUser.findAll({
-        attributes: ['id', 'telegram_id', 'tusername', 'tname', 'balance'], 
+      const topUsers = await User.findAll({
+        attributes: ['id', 'userId', 'tusername', 'tname', 'balance'], 
         order: [['balance', 'DESC']], 
         limit: 10 
       });
@@ -879,4 +861,178 @@ const getTotalTeam = async (req, res) => {
       return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
   };
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser };
+
+  const streak = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Find user in the database
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Check if the user already claimed today
+        const lastClaimedDate = user.streak_date ? new Date(user.streak_date) : null;
+        const today = new Date();
+        const isSameDay =
+            lastClaimedDate &&
+            lastClaimedDate.getDate() === today.getDate() &&
+            lastClaimedDate.getMonth() === today.getMonth() &&
+            lastClaimedDate.getFullYear() === today.getFullYear();
+
+        if (isSameDay) {
+            return res.json({ success: false, message: "You have already claimed today's streak reward!" });
+        }
+        if(user.streak_no<=30){
+            await User.update(
+                {   
+                    streak_no: user.streak_no + 1,
+                    streak: user.streak + 100, // Add 100 coins
+                    streak_date: today // Update last claimed date
+                },
+                { where: { id: userId } }
+            );
+    
+            return res.json({ success: true, message: "Streak Bonus claimed successfully" });
+
+        }
+        return res.json({ success: false, message: "This reward Available for 30 days Only" });
+        // Update user streak balance & claim date
+        
+    } catch (error) {
+        console.error("Error claiming streak:", error);
+        return res.json({ message: "Internal server error" });
+    }
+};
+const streak_time = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Find user in the database
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Check if the user already claimed today
+        const lastClaimedDate = user.streak_date ? new Date(user.streak_date) : null;
+        const today = new Date();
+        const isSameDay =
+            lastClaimedDate &&
+            lastClaimedDate.getDate() === today.getDate() &&
+            lastClaimedDate.getMonth() === today.getMonth() &&
+            lastClaimedDate.getFullYear() === today.getFullYear();
+         strekno =user.streak_no;
+        if (isSameDay) {
+            return res.json({ success: false, isSameDay: null,strekno ,message: "You have already claimed today's streak reward!" });
+        }
+
+        return res.json({ success: true, isSameDay,strekno, message: "Streak Bonus claimed successfully" });
+    } catch (error) {
+        console.error("Error claiming streak:", error);
+        return res.json({ message: "Internal server error" });
+    }
+};
+   const checkquest = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Find user in the database
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Check if the user already claimed today
+        const lastClaimedDate = user.quest_date ? new Date(user.quest_date) : null;
+        const today = new Date();
+        const isSameDay =
+            lastClaimedDate &&
+            lastClaimedDate.getDate() === today.getDate() &&
+            lastClaimedDate.getMonth() === today.getMonth() &&
+            lastClaimedDate.getFullYear() === today.getFullYear();
+        if (isSameDay) {
+            return res.json({ success: false, isSameDay: null ,message: "You have already claimed today's streak reward!" });
+        }
+
+        return res.json({ success: true, isSameDay, message: "Streak Bonus claimed successfully" });
+    } catch (error) {
+        console.error("Error claiming streak:", error);
+        return res.json({ message: "Internal server error" });
+    }
+   }
+   const fatchCoin= async (req, res) =>{
+    // console.log(req.body);
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await User.findOne({ where: { id: userId } });
+        // console.log(user);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+         return res.status(200).json({
+            message: "Balance Fatch successfully",
+            tabbalance: user.tabbalance,
+        });
+    }
+    catch (error) {
+        console.error("❌ Error updating balance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+   const dailyquest = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Find user in the database
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.json({ message: "User Not Found" });
+        }
+
+        // Check if the user already claimed today
+        const lastClaimedDate = user.quest_date ? new Date(user.quest_date) : null;
+        const today = new Date();
+        const isSameDay =
+            lastClaimedDate &&
+            lastClaimedDate.getDate() === today.getDate() &&
+            lastClaimedDate.getMonth() === today.getMonth() &&
+            lastClaimedDate.getFullYear() === today.getFullYear();
+
+        if (isSameDay) {
+            return res.json({ success: false, message: "You have already claimed today's quest reward!" });
+        }
+         const data = await User.update(
+                {   
+                    dailyquest: user.dailyquest + 100, // Add 100 coins
+                    quest_date: today // Update last claimed date
+                },
+                { where: { id: userId } }
+            );
+            return res.json({ success: true, message: "Quest Bonus claimed successfully",data:data });
+        // Update user streak balance & claim date
+        
+    } catch (error) {
+        console.error("Error claiming streak:", error);
+        return res.json({ message: "Internal server error" });
+    }
+};
+
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser,streak,streak_time ,checkquest,dailyquest, fatchCoin};

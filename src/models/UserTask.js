@@ -8,7 +8,7 @@ const UserTask = sequelize.define("UserTask", {
     autoIncrement: true,
     primaryKey: true,
   },
-  telegram_id: {
+  userId: {
     type: DataTypes.BIGINT,
     allowNull: false,
   },

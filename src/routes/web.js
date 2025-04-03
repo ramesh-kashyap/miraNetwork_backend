@@ -63,11 +63,12 @@ router.post('/get-last-trade',telegramAuthMiddleware, TelegramController.getLast
 
 router.get('/all-data',telegramAuthMiddleware, TelegramController.getAlldata);
 router.post('/updateBalance', telegramAuthMiddleware,TelegramController.updateBalance);
-router.post('/fatchBalance', telegramAuthMiddleware,TelegramController.fatchBalance);
+router.get('/fatchBalance', telegramAuthMiddleware,TelegramController.fatchBalance);
+router.get('/fatchCoin', telegramAuthMiddleware,TelegramController.fatchCoin);
 router.post('/fatchPoint', telegramAuthMiddleware,TelegramController.fatchpoint);
 
-router.get('/daycoin', telegramAuthMiddleware,TelegramController.daycoin);
-router.post('/claim-day', telegramAuthMiddleware,TelegramController.claimday);
+router.get('/baycoin', telegramAuthMiddleware,TelegramController.daycoin);
+router.get('/claim-day', telegramAuthMiddleware,TelegramController.claimday);
 router.post('/claim-reward',telegramAuthMiddleware,TelegramController.claimtoday);
 router.get('/fetch-points',telegramAuthMiddleware, TelegramController.fetchPoints);
 router.post('/update-today-roi',telegramAuthMiddleware, TelegramController.updateTodayRoi);
@@ -82,9 +83,13 @@ router.get('/total-balance', telegramAuthMiddleware,TelegramController.getTotalB
 router.get('/all-data',telegramAuthMiddleware, TelegramController.getAlldata);
 router.get('/TotalMember',telegramAuthMiddleware, TelegramController.getTotalMember);
 router.get('/topuser',telegramAuthMiddleware, TelegramController.getTopUser);
-
+router.post('/streak', telegramAuthMiddleware, TelegramController.streak);
+router.get('/streak_time', telegramAuthMiddleware, TelegramController.streak_time);
 
 router.get('/TotalTeam',telegramAuthMiddleware, TelegramController.getTotalTeam);
+
+router.get('/checkquest',telegramAuthMiddleware, TelegramController.checkquest);
+router.post('/dailyquest', telegramAuthMiddleware, TelegramController.dailyquest);
 // app.get('/api/auth.daycoin', (req, res) => {
 //   res.json({ message: 'Baycoin route working!' });
 // });
