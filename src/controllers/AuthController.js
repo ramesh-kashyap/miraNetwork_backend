@@ -77,7 +77,7 @@ if (!strongPassword.test(password)) {
         // Generate Random Username & Temporary Password
         const username = Math.floor(10000000 + Math.random() * 90000000).toString();
         const tpassword = Math.random().toString(36).substring(2, 8);
-
+        const refialcode = Math.floor(10000000 + Math.random()* 90000000).toString();
         // Hash passwords
         const hashedPassword = await bcrypt.hash(password, 10);
         const hashedTPassword = await bcrypt.hash(tpassword, 10);
@@ -95,6 +95,7 @@ if (!strongPassword.test(password)) {
             phone:phone,
             password: hashedPassword,
             tpassword: hashedTPassword,
+            refrial_code: refialcode,
             PSR: password,
             TPSR: tpassword,
             sponsor: sponsorId || 1, // Default to 1 if no sponsor is found
@@ -242,7 +243,7 @@ const register2 = async (req, res) => {
         };
 
         // Optional: Log newUser for debugging (avoid logging sensitive info in production)
-        console.log("New User Data:", newUser);
+        // console.log("New User Data:", newUser);
 
         // Insert new user into the database
         await db.execute("INSERT INTO users SET ?", newUser);
@@ -297,7 +298,7 @@ const login = async (req, res) => {
       const token = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET,
-        { expiresIn: '1h' }
+        // { expiresIn: '1h' }
       );
   
       return res.status(200).json({
@@ -328,7 +329,7 @@ const logout = async (req, res) => {
 
 
 const loginWithTelegram = async (req, res) => {
-    console.log(req.body);
+    // console.log(req.body);
     try {
         const { telegram_id, tusername, tname, tlastname } = req.body;
 

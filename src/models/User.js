@@ -44,6 +44,10 @@ const User = sequelize.define('User', {
         allowNull: true,
         defaultValue: 1,
     },
+    refrial_code:{
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
     active_status: {
         type: DataTypes.ENUM('Active', 'Inactive', 'Pending'), // Fixed ENUM options
         defaultValue: 'Pending', // Set default properly
