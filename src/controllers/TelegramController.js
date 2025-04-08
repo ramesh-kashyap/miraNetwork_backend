@@ -356,7 +356,7 @@ const getUserBalance = async (req, res) => {
     try {
       let user = req.user;
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
-      let userDetail = await User.findOne({ where: { userId:user.id } });
+      let userDetail = await User.findOne({ where: { id:user.id } });
       if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
         const userbalance = userDetail ? userDetail.userbalance : 0;
         const miningBonus = await Income.sum("comm", {
@@ -727,13 +727,13 @@ const claimday = async (req,res) =>{
             return res.status(400).json({ success: false, message: "Telegram ID is required" });
         }
 
-        const totalBalance = await TelegramUser.sum('balance', {
+        const totalBalance = await User.sum('balance', {
             where: { id:user.id }
           });
 
-          const allBalance = await TelegramUser.sum('balance');
+          const allBalance = await User.sum('balance');
 
-          const tabBalance = await TelegramUser.sum('tabbalance', {
+          const tabBalance = await User.sum('tabbalance', {
             where: { id:user.id }
           });
         
@@ -926,16 +926,15 @@ const streak_time = async (req, res) => {
         if (!userId) {
             return res.json({ message: "User Not Found" });
         }
-
         // Find user in the database
         const user = await User.findOne({ where: { id: userId } });
         if (!user) {
             return res.json({ message: "User Not Found" });
         }
-
         // Check if the user already claimed today
         const lastClaimedDate = user.quest_date ? new Date(user.quest_date) : null;
         const today = new Date();
+        // console.log(today);
         const isSameDay =
             lastClaimedDate &&
             lastClaimedDate.getDate() === today.getDate() &&

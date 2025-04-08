@@ -18,22 +18,23 @@ const User = sequelize.define('User', {
     balance: { type: DataTypes.FLOAT, allowNull: true }, // Stores last trade timestamp
     tabbalance: { type: DataTypes.FLOAT, allowNull: true },
     meme_coin: { type: DataTypes.FLOAT, allowNull: true },
-    meme_date: {
-        type: DataTypes.DATE, // Change from STRING to DATE
+    meme_date: {type: DataTypes.INTEGER, // Change from STRING to DATE
         allowNull: true,
     },
     hour_bal: { type: DataTypes.FLOAT, allowNull: true },
     streak_no: {type: DataTypes.INTEGER, allowNull: true},
     streak: { type: DataTypes.INTEGER, allowNull: true },
     streak_date: {
-        type: DataTypes.DATE, // Change from STRING to DATE
+        type: DataTypes.INTEGER, // Change from STRING to DATE
         allowNull: true,
     },
     dailyquest: { type: DataTypes.INTEGER, allowNull: true },
     quest_date: {
-        type: DataTypes.DATE, // Change from STRING to DATE
+        type: DataTypes.INTEGER, // Change from STRING to DATE
         allowNull: true,
     },
+    airo: { type: DataTypes.INTEGER, allowNull: true },
+    aironame: { type: DataTypes.STRING, allowNull: true },
     username: {
         type: DataTypes.STRING,
         allowNull: false,
