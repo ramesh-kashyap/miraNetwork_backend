@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 // const { TelegramUser } = require("../models");
 const { User,Income,Transaction,UserTask} = require("../models"); // Adjust path as needed
 const Task = require("../models/Task");
+const Premium = require("../models/Premium");
 const moment = require("moment-timezone");
 const { getVip,getBalance,getPercentage } = require("../services/userService");
 const { log } = require('winston');
@@ -547,8 +548,21 @@ const updateBalance = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-
-           await User.increment({ balance: 1, tabbalance: 1 }, { where: { id: userId } });
+        if (user.aironame === 'bronze') {
+            await User.increment({ balance: 2, tabbalance: 2 }, { where: { id: userId } });
+          } else if (user.aironame === 'Silver') {
+            await User.increment({ balance: 3, tabbalance: 3 }, { where: { id: userId } });
+          } else if (user.aironame === 'Golden') {
+            await User.increment({ balance: 4, tabbalance: 4 }, { where: { id: userId } });
+          } else if (user.aironame === 'Diamond') {
+            await User.increment({ balance: 5, tabbalance: 5 }, { where: { id: userId } });
+          }else {
+            // Default increment if no matching aironame
+            await User.increment({ balance: 1, tabbalance: 1 }, { where: { id: userId } });
+          }
+          
+            
+           
         
 
         const updatedUser = await User.findOne({ where: { id: userId } });
@@ -962,6 +976,7 @@ const streak_time = async (req, res) => {
         }
          return res.status(200).json({
             message: "Balance Fatch successfully",
+            premium: user.aironame,
             tabbalance: user.tabbalance,
         });
     }
@@ -1038,4 +1053,68 @@ const coins = async (req, res) => {
     }
 };
 
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser,streak,streak_time ,checkquest,dailyquest, fatchCoin, coins};
+const buyPackage = async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { packageName, packagePrice } = req.body;
+  
+      if (!userId) {
+        return res.json({ message: "User ID not found in request" });
+      }
+  
+      // Find user
+      const user = await User.findOne({ where: { id: userId } });
+  
+      if (!user) {
+        return res.json({ message: "User not found in database" });
+      }
+  
+      // Check if user has enough airo
+      if (user.airo < packagePrice) {
+        return res.json({ message: "Insufficient AIRO balance" });
+      }
+  
+      // Reduce airo
+      const newAiroBalance = user.airo - packagePrice;
+
+      const checkp = await Premium.findOne({
+        where: {
+          userId: userId,
+          pack: packageName,
+        }
+      });
+      
+      if (checkp) {
+        return res.json({ message: "You already bought this package!" });
+      }
+      
+      // Insert into Primium table
+      await Premium.create({
+        userId: userId,
+        pack: packageName,
+        airo: packagePrice,
+      });
+  
+      // Update user record
+      await User.update(
+        {
+          airo: newAiroBalance,
+          aironame: packageName,
+        },
+        {
+          where: { id: userId },
+        }
+      );
+  
+      return res.json({
+        success: true,
+        message: `Package '${packageName}' purchased successfully`,
+      });
+  
+    } catch (error) {
+      console.error("❌ Error purchasing package:", error);
+      return res.json({ message: "Internal server error" });
+    }
+  };
+
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser,streak,streak_time ,checkquest,dailyquest, fatchCoin, coins, buyPackage};

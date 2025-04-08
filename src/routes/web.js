@@ -93,6 +93,7 @@ router.get('/TotalTeam',telegramAuthMiddleware, TelegramController.getTotalTeam)
 router.get('/checkquest',telegramAuthMiddleware, TelegramController.checkquest);
 router.post('/dailyquest', telegramAuthMiddleware, TelegramController.dailyquest);
 router.get('/coins', telegramAuthMiddleware, TelegramController.coins);
+router.post('/buy-package', telegramAuthMiddleware, TelegramController.buyPackage);
 // app.get('/api/auth.daycoin', (req, res) => {
 //   res.json({ message: 'Baycoin route working!' });
 // });
