@@ -7,6 +7,8 @@ const jwt = require("jsonwebtoken");
 const { User,Income,Transaction,UserTask} = require("../models"); // Adjust path as needed
 const Task = require("../models/Task");
 const Premium = require("../models/Premium");
+const Lautery = require("../models/Lautery");
+const Lautrygift = require("../models/Lautrygift");
 const moment = require("moment-timezone");
 const { getVip,getBalance,getPercentage } = require("../services/userService");
 const { log } = require('winston');
@@ -1117,4 +1119,64 @@ const buyPackage = async (req, res) => {
     }
   };
 
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser,streak,streak_time ,checkquest,dailyquest, fatchCoin, coins, buyPackage};
+  const fatchgudies = async (req, res) =>{
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const coins = await Lautery.findAll();
+         return res.status(200).json({
+            message: "Coins Fatch successfully",
+            lautry: coins,
+            users: user,
+        });
+    }
+    catch (error) {
+        console.error("❌ Error Fatching Lautery:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+const sendgift = async (req, res) =>{
+    console.log(req.body);
+    const {amount, gname ,butamount} = req.body;
+    try{
+        const userId = req.user?.id; // Ensure req.user is not undefined
+        if (!userId) {
+            return res.json({ message: "Unauthorized: User ID missing" });
+        }
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.json({ message: "User not found" });
+        }
+        if(user.usdt < butamount){
+            return res.json({ message: "Your USDT Amount is Less" }); 
+        }
+
+        // const coins = await Lautrygift.findAll();
+        const newUsdt = user.usdt - butamount;
+        await User.update({usdt: newUsdt,},{where: { id: userId },});
+        await Lautrygift.create({
+            userId: user.id,
+            gift_name: gname,
+            usdt: butamount,
+            gift_amount: amount,
+          });
+          return res.status(200).json({
+            success: true,
+            message: `Lautery purchased successfully`,
+          });
+    }
+    catch (error) {
+        console.error("❌ Error Fatching Lautery:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral,getAlldata, updateBalance, fatchBalance, fatchpoint, daycoin, claimday,claimtoday, getAlldata,getTotalBalance,getTotalTeam,getTotalMember,getTopUser,streak,streak_time ,checkquest,dailyquest, fatchCoin, coins, buyPackage,fatchgudies,fatchgudies,sendgift};

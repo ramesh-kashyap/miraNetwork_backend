@@ -33,6 +33,7 @@ const User = sequelize.define('User', {
         type: DataTypes.INTEGER, // Change from STRING to DATE
         allowNull: true,
     },
+    usdt: { type: DataTypes.INTEGER, allowNull: true },
     airo: { type: DataTypes.INTEGER, allowNull: true },
     aironame: { type: DataTypes.STRING, allowNull: true },
     username: {
